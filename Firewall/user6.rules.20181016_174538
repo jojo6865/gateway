@@ -1,0 +1,62 @@
+*filter
+:ufw6-user-input - [0:0]
+:ufw6-user-output - [0:0]
+:ufw6-user-forward - [0:0]
+:ufw6-before-logging-input - [0:0]
+:ufw6-before-logging-output - [0:0]
+:ufw6-before-logging-forward - [0:0]
+:ufw6-user-logging-input - [0:0]
+:ufw6-user-logging-output - [0:0]
+:ufw6-user-logging-forward - [0:0]
+:ufw6-after-logging-input - [0:0]
+:ufw6-after-logging-output - [0:0]
+:ufw6-after-logging-forward - [0:0]
+:ufw6-logging-deny - [0:0]
+:ufw6-logging-allow - [0:0]
+:ufw6-user-limit - [0:0]
+:ufw6-user-limit-accept - [0:0]
+### RULES ###
+
+### tuple ### deny any 22 ::/0 any ::/0 out_ens160
+-A ufw6-user-output -o ens160 -p tcp --dport 22 -j DROP
+-A ufw6-user-output -o ens160 -p udp --dport 22 -j DROP
+
+### tuple ### allow any 22 ::/0 any ::/0 in_ens192
+-A ufw6-user-input -i ens192 -p tcp --dport 22 -j ACCEPT
+-A ufw6-user-input -i ens192 -p udp --dport 22 -j ACCEPT
+
+### tuple ### allow any 80 ::/0 any ::/0 in
+-A ufw6-user-input -p tcp --dport 80 -j ACCEPT
+-A ufw6-user-input -p udp --dport 80 -j ACCEPT
+
+### tuple ### allow udp 53 ::/0 any ::/0 in
+-A ufw6-user-input -p udp --dport 53 -j ACCEPT
+
+### tuple ### allow tcp 53 ::/0 any ::/0 in
+-A ufw6-user-input -p tcp --dport 53 -j ACCEPT
+
+### tuple ### allow tcp 2048,3128,3130,3401,4827 ::/0 any ::/0 Squid - in
+-A ufw6-user-input -p tcp -m multiport --dports 2048,3128,3130,3401,4827 -j ACCEPT -m comment --comment 'dapp_Squid'
+
+### tuple ### allow tcp 3128 ::/0 any ::/0 in
+-A ufw6-user-input -p tcp --dport 3128 -j ACCEPT
+
+### tuple ### allow tcp 10000 ::/0 any ::/0 in
+-A ufw6-user-input -p tcp --dport 10000 -j ACCEPT
+
+### END RULES ###
+
+### LOGGING ###
+-A ufw6-after-logging-input -j LOG --log-prefix "[UFW BLOCK] " -m limit --limit 3/min --limit-burst 10
+-A ufw6-after-logging-forward -j LOG --log-prefix "[UFW BLOCK] " -m limit --limit 3/min --limit-burst 10
+-I ufw6-logging-deny -m conntrack --ctstate INVALID -j RETURN -m limit --limit 3/min --limit-burst 10
+-A ufw6-logging-deny -j LOG --log-prefix "[UFW BLOCK] " -m limit --limit 3/min --limit-burst 10
+-A ufw6-logging-allow -j LOG --log-prefix "[UFW ALLOW] " -m limit --limit 3/min --limit-burst 10
+### END LOGGING ###
+
+### RATE LIMITING ###
+-A ufw6-user-limit -m limit --limit 3/minute -j LOG --log-prefix "[UFW LIMIT BLOCK] "
+-A ufw6-user-limit -j REJECT
+-A ufw6-user-limit-accept -j ACCEPT
+### END RATE LIMITING ###
+COMMIT
