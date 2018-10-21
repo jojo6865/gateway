@@ -1,0 +1,7 @@
+This is a linux applicance that is preconfigured with UFW, Squid proxy 
+server, DNS and DHCP.
+
+Recommended hardware requirements are
+1GB of Ram
+1 CPU
+2 Nics (virtual or physical)
